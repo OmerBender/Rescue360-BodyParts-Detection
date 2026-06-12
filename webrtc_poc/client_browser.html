@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>WebRTC YOLO Video File Detection</title>
+<style>
+body {
+    font-family: Arial;
+    background: #111;
+    color: white;
+    text-align: center;
+    margin: 0;
+}
+#wrap {
+    position: relative;
+    display: inline-block;
+    line-height: 0;
+}
+video {
+    width: 960px;
+    max-width: 95vw;
+    height: auto;
+    display: block;
+}
+canvas {
+    position: absolute;
+    left: 0;
+    top: 0;
+    pointer-events: none;
+}
+button {
+    padding: 12px 20px;
+    font-size: 18px;
+    margin: 15px;
+}
+</style>
+</head>
+<body>
+<h1>WebRTC YOLO Video File Detection</h1>
+<button onclick="start()">Start Video Test</button>
+<p id="status">Idle</p>
+
+<div id="wrap">
+    <video id="video" autoplay playsinline muted controls loop>
+        <source src="/video" type="video/mp4">
+    </video>
+    <canvas id="canvas"></canvas>
+</div>
+
+<script>
+let pc;
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const statusText = document.getElementById("status");
+
+function resizeCanvasToDisplayedVideo() {
+    const rect = video.getBoundingClientRect();
+    canvas.width = Math.round(rect.width);
+    canvas.height = Math.round(rect.height);
+    canvas.style.width = `${rect.width}px`;
+    canvas.style.height = `${rect.height}px`;
+}
+
+function drawDetections(data) {
+    if (!video.videoWidth || !video.videoHeight) return;
+
+    resizeCanvasToDisplayedVideo();
+
+    const rect = video.getBoundingClientRect();
+    const displayWidth = rect.width;
+    const displayHeight = rect.height;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const sourceWidth = data.frame_width || video.videoWidth;
+    const sourceHeight = data.frame_height || video.videoHeight;
+
+    const scaleX = displayWidth / sourceWidth;
+    const scaleY = displayHeight / sourceHeight;
+
+    for (const det of data.detections) {
+        const [bx1, by1, bx2, by2] = det.bbox;
+
+        const x1 = bx1 * scaleX;
+        const y1 = by1 * scaleY;
+        const x2 = bx2 * scaleX;
+        const y2 = by2 * scaleY;
+
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = "lime";
+        ctx.fillStyle = "lime";
+        ctx.font = "22px Arial";
+
+        ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+        ctx.fillText(`${det.class_name} ${det.confidence}`, x1, Math.max(25, y1 - 8));
+    }
+
+    statusText.innerText =
+        `detections=${data.detections.length} | server=${data.latency_ms}ms`;
+}
+
+async function start() {
+    pc = new RTCPeerConnection();
+
+    const dc = pc.createDataChannel("detections", {
+        ordered: false,
+        maxRetransmits: 0
+    });
+
+    dc.onmessage = (event) => {
+        drawDetections(JSON.parse(event.data));
+    };
+
+    await video.play();
+
+    const stream = video.captureStream(30);
+
+    for (const track of stream.getTracks()) {
+        pc.addTrack(track, stream);
+    }
+
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+
+    const response = await fetch("/offer", {
+        method: "POST",
+        body: JSON.stringify({
+            sdp: pc.localDescription.sdp,
+            type: pc.localDescription.type
+        }),
+        headers: { "Content-Type": "application/json" }
+    });
+
+    const answer = await response.json();
+    await pc.setRemoteDescription(answer);
+
+    statusText.innerText = "Connected";
+}
+</script>
+</body>
+</html>
