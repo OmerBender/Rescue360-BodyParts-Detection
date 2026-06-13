@@ -11,7 +11,7 @@ The project was developed as part of a larger research and development effort fo
 
 ### Live Detection Example
 
-
+![Live Detection](images/live_detection.png)
 
 The image above shows the system detecting visible human body parts in a video frame and drawing bounding boxes with confidence scores.
 
