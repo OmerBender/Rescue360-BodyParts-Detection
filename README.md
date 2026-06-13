@@ -7,7 +7,15 @@ Rescue360 is a computer vision system designed to assist search-and-rescue teams
 The system uses a custom-trained YOLOv8 model to detect visible human body parts in real-time video streams captured by standard cameras or 360° cameras such as the Insta360 X4.
 
 The project was developed as part of a larger research and development effort focused on creating an offline-capable mobile rescue solution that can assist first responders in identifying potential survivors in collapsed structures, rubble fields, and disaster zones.
+## Demo
 
+### Live Detection Example
+
+
+
+The image above shows the system detecting visible human body parts in a video frame and drawing bounding boxes with confidence scores.
+
+---
 ---
 
 ## Project Goal
