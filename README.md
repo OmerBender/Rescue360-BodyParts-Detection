@@ -7,6 +7,9 @@ Rescue360 is a computer vision system designed to assist search-and-rescue teams
 The system uses a custom-trained YOLOv8 model to detect visible human body parts in real-time video streams captured by standard cameras or 360° cameras such as the Insta360 X4.
 
 The project was developed as part of a larger research and development effort focused on creating an offline-capable mobile rescue solution that can assist first responders in identifying potential survivors in collapsed structures, rubble fields, and disaster zones.
+
+---
+
 ## Demo
 
 ### Live Detection Example
@@ -16,26 +19,23 @@ The project was developed as part of a larger research and development effort fo
 The image above shows the system detecting visible human body parts in a video frame and drawing bounding boxes with confidence scores.
 
 ---
----
 
 ## Project Goal
 
 During disaster response operations, rescuers often need to inspect large areas quickly while searching for signs of trapped individuals.
 
-This project aims to automate part of that process by:
+This project aims to:
 
-* Detecting human body parts in real-time
-* Highlighting potential victims
-* Supporting live video streams
-* Supporting recorded video analysis
-* Enabling future deployment on Android devices using TensorFlow Lite
-* Reducing search time and increasing situational awareness
+* Detect human body parts in real time
+* Highlight potential victims
+* Support live camera streams
+* Support recorded video analysis
+* Enable future Android deployment using TensorFlow Lite
+* Reduce search time and improve situational awareness
 
 ---
 
 ## Supported Classes
-
-The model is trained to detect the following classes:
 
 | Class  | Description     |
 | ------ | --------------- |
@@ -54,8 +54,7 @@ The model is trained to detect the following classes:
 Camera / Insta360
         │
         ▼
-Client Application
-(OpenCV)
+OpenCV Client
         │
         ▼
 FastAPI Detection Server
@@ -93,7 +92,7 @@ Live Visualization
 
 ### Deployment
 
-* Local server deployment
+* Local deployment
 * Cloud deployment support
 * Android TensorFlow Lite deployment (planned)
 
@@ -111,7 +110,7 @@ Live Visualization
 ### Video Processing
 
 * Analyze recorded videos
-* Save annotated output videos
+* Save annotated videos
 * Generate visual detection results
 
 ### Camera Support
@@ -141,7 +140,7 @@ The model was trained on a custom body-parts dataset created specifically for di
 * Multiple body-part classes
 * Background-only images to reduce false positives
 
-### Training Classes Distribution
+### Approximate Class Distribution
 
 | Class  | Objects |
 | ------ | ------: |
@@ -165,19 +164,19 @@ Best validation results achieved during training:
 | mAP@50    |  0.93 |
 | mAP@50-95 |  0.49 |
 
-Inference speed:
+### Inference Speed
 
 | Environment        | Approximate Speed |
 | ------------------ | ----------------: |
-| Apple M4 Pro       |  ~14 ms per image |
-| Local server       |         Real-time |
-| Android deployment |  Under evaluation |
+| Apple M4 Pro       |      ~14 ms/image |
+| Local Server       |         Real-time |
+| Android Deployment |  Under evaluation |
 
 ---
 
-## Installation
+## Quick Start
 
-### Clone Repository
+### 1. Clone Repository
 
 ```bash
 git clone https://github.com/OmerBender/Rescue360-BodyParts-Detection.git
@@ -185,10 +184,44 @@ git clone https://github.com/OmerBender/Rescue360-BodyParts-Detection.git
 cd Rescue360-BodyParts-Detection
 ```
 
-### Install Dependencies
+### 2. Create Virtual Environment
+
+```bash
+python -m venv .venv
+
+source .venv/bin/activate
+```
+
+### 3. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
+```
+
+---
+
+## Model Weights
+
+The trained YOLOv8 model is not included in this repository.
+
+Download the model weights and place the file next to `server.py`.
+
+Expected structure:
+
+```text
+Rescue360-BodyParts-Detection/
+
+├── best.pt
+├── server.py
+├── client_video_live_async.py
+├── client_video.py
+├── requirements.txt
+```
+
+The server expects the model filename to be:
+
+```text
+best.pt
 ```
 
 ---
@@ -213,7 +246,7 @@ http://127.0.0.1:8000/detect
 
 ### Laptop Camera
 
-Open:
+Set:
 
 ```python
 VIDEO_SOURCE = 0
@@ -273,7 +306,7 @@ python client_video.py
 
 ---
 
-## Project Files
+## Project Structure
 
 ```text
 server.py
@@ -304,7 +337,7 @@ webrtc_poc/
 
 * Android application deployment
 * TensorFlow Lite optimization
-* On-device inference
+* Fully offline inference
 * Multi-camera support
 * Victim tracking
 * Small-object detection improvements
@@ -314,12 +347,12 @@ webrtc_poc/
 
 ## Authors
 
-**Omer Bender**
+### Omer Bender
 
 Computer Science Student
 Machine Learning & Computer Vision Developer
 
-**Eithan Shaoat**
+### Eithan Shaoat
 
 Project Contributor
 
@@ -327,4 +360,6 @@ Project Contributor
 
 ## Disclaimer
 
-This project is intended for educational, research, and prototype rescue-assistance purposes. It is not certified for operational emergency use.
+This project is intended for educational, research, and prototype rescue-assistance purposes only.
+
+It is not certified for operational emergency use.
