@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Detection Client</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+        }
+
+        header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        header p {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .video-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .video-container {
+            position: relative;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            aspect-ratio: 16 / 9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .btn-primary:disabled {
+            background: #999;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .info-panel {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            background: #333;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .info-label {
+            opacity: 0.7;
+        }
+
+        .info-value {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-left: 5px;
+        }
+
+        .status-connected {
+            background: #2ecc71;
+            animation: pulse 2s infinite;
+        }
+
+        .status-disconnected {
+            background: #e74c3c;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .detections-list {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .detection-item {
+            background: #333;
+            padding: 8px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            border-left: 3px solid #667eea;
+        }
+
+        .detection-class {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .detection-confidence {
+            color: #2ecc71;
+            margin-left: 5px;
+        }
+
+        .settings {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .setting-row {
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .setting-row label {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        .setting-row input,
+        .setting-row select {
+            padding: 8px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            background: #333;
+            color: #fff;
+            font-size: 12px;
+        }
+
+        @media (max-width: 800px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .bottom-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        @media (max-width: 800px) {
+            .bottom-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎥 Detection Client</h1>
+            <p>Real-time YOLO Object Detection via WebSocket</p>
+        </header>
+
+        <div class="settings">
+            <div class="setting-row">
+                <label>Client ID (שם המצלמה)</label>
+                <input type="text" id="clientId" placeholder="e.g., camera1" value="camera1">
+            </div>
+            <div class="setting-row">
+                <label>Server URL</label>
+                <input type="text" id="serverUrl" placeholder="ws://localhost:8000" value="ws://localhost:8000">
+            </div>
+            <div class="setting-row">
+                <label>FPS Limit (בחר פריים לשניה)</label>
+                <select id="fpsLimit">
+                    <option value="5">5 FPS</option>
+                    <option value="10" selected>10 FPS</option>
+                    <option value="15">15 FPS</option>
+                    <option value="30">30 FPS</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div class="video-section">
+                <div class="video-container">
+                    <video id="video" autoplay playsinline></video>
+                    <canvas id="canvas"></canvas>
+                </div>
+                <div class="controls">
+                    <button class="btn-primary" id="startBtn" onclick="startCamera()">▶️ Start Camera</button>
+                    <button class="btn-primary" id="connectBtn" onclick="connectWebSocket()" disabled>🔗 Connect Server</button>
+                    <button class="btn-danger" id="stopBtn" onclick="stopAll()" disabled>⏹️ Stop</button>
+                </div>
+            </div>
+
+            <div class="info-panel">
+                <div>
+                    <strong>Connection Status</strong>
+                    <div class="status-indicator status-disconnected"></div>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Status:</span>
+                    <span class="info-value" id="status">Disconnected</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Latency:</span>
+                    <span class="info-value" id="latency">-- ms</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Frames Sent:</span>
+                    <span class="info-value" id="framesSent">0</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Objects Found:</span>
+                    <span class="info-value" id="objectsFound">0</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">FPS:</span>
+                    <span class="info-value" id="fps">0</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-grid">
+            <div class="detections-list">
+                <strong>Latest Detections</strong>
+                <div id="detectionsList" style="margin-top: 10px;"></div>
+            </div>
+
+            <div class="info-panel">
+                <strong>Server Stats</strong>
+                <div id="serverStats" style="margin-top: 10px; font-size: 12px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let video = document.getElementById('video');
+        let canvas = document.getElementById('canvas');
+        let ctx = canvas.getContext('2d');
+        let ws = null;
+        let stream = null;
+        let isStreaming = false;
+        let frameCount = 0;
+        let startTime = Date.now();
+        let lastLatency = 0;
+
+        async function startCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+                    audio: false
+                });
+                video.srcObject = stream;
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('connectBtn').disabled = false;
+                updateStatus('Camera ready, click Connect Server');
+            } catch (err) {
+                alert('Error accessing camera: ' + err.message);
+            }
+        }
+
+        function connectWebSocket() {
+            const clientId = document.getElementById('clientId').value || 'camera1';
+            const serverUrl = document.getElementById('serverUrl').value || 'ws://localhost:8000';
+            const wsUrl = `${serverUrl}/ws/${clientId}`;
+
+            try {
+                ws = new WebSocket(wsUrl);
+                ws.binaryType = 'arraybuffer';
+
+                ws.onopen = () => {
+                    updateStatus('✅ Connected');
+                    isStreaming = true;
+                    document.getElementById('connectBtn').disabled = true;
+                    document.getElementById('stopBtn').disabled = false;
+                    startSendingFrames();
+                    pollServerStats();
+                };
+
+                ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        lastLatency = data.latency_ms;
+                        document.getElementById('latency').textContent = data.latency_ms + ' ms';
+                        document.getElementById('objectsFound').textContent = data.detections.length;
+
+                        // Draw detections on canvas
+                        drawDetections(data.detections);
+
+                        // Update detections list
+                        updateDetectionsList(data.detections);
+
+                        frameCount++;
+                        updateFPS();
+                    } catch (err) {
+                        console.error('Error processing message:', err);
+                    }
+                };
+
+                ws.onerror = (event) => {
+                    updateStatus('❌ WebSocket Error');
+                    console.error('WebSocket error:', event);
+                };
+
+                ws.onclose = () => {
+                    updateStatus('Disconnected');
+                    isStreaming = false;
+                    document.getElementById('connectBtn').disabled = false;
+                    document.getElementById('stopBtn').disabled = true;
+                };
+            } catch (err) {
+                alert('WebSocket connection error: ' + err.message);
+            }
+        }
+
+        function startSendingFrames() {
+            const fpsLimit = parseInt(document.getElementById('fpsLimit').value) || 10;
+            const frameInterval = 1000 / fpsLimit;
+
+            const sendFrame = () => {
+                if (!isStreaming || !ws || ws.readyState !== WebSocket.OPEN) {
+                    return;
+                }
+
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0);
+
+                canvas.toBlob((blob) => {
+                    if (blob && ws.readyState === WebSocket.OPEN) {
+                        ws.send(blob);
+                        document.getElementById('framesSent').textContent = parseInt(document.getElementById('framesSent').textContent) + 1;
+                    }
+                }, 'image/jpeg', 0.8);
+
+                setTimeout(sendFrame, frameInterval);
+            };
+
+            sendFrame();
+        }
+
+        function drawDetections(detections) {
+            const videoWidth = video.videoWidth;
+            const videoHeight = video.videoHeight;
+            canvas.width = videoWidth;
+            canvas.height = videoHeight;
+
+            detections.forEach(det => {
+                const [x1, y1, x2, y2] = det.bbox;
+                const width = x2 - x1;
+                const height = y2 - y1;
+
+                // Draw bounding box
+                ctx.strokeStyle = '#00FF00';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x1, y1, width, height);
+
+                // Draw label
+                ctx.fillStyle = '#00FF00';
+                ctx.font = 'bold 14px Arial';
+                const label = `${det.class_name} (${(det.confidence * 100).toFixed(0)}%)`;
+                ctx.fillText(label, x1, y1 - 5);
+            });
+        }
+
+        function updateDetectionsList(detections) {
+            const list = document.getElementById('detectionsList');
+            list.innerHTML = detections.slice(0, 5).map(det => `
+                <div class="detection-item">
+                    <span class="detection-class">${det.class_name}</span>
+                    <span class="detection-confidence">${(det.confidence * 100).toFixed(0)}%</span>
+                </div>
+            `).join('');
+        }
+
+        function updateFPS() {
+            const elapsed = (Date.now() - startTime) / 1000;
+            const fps = (frameCount / elapsed).toFixed(1);
+            document.getElementById('fps').textContent = fps;
+        }
+
+        function updateStatus(status) {
+            document.getElementById('status').textContent = status;
+        }
+
+        async function pollServerStats() {
+            if (!isStreaming) return;
+
+            try {
+                const response = await fetch(document.getElementById('serverUrl').value + '/stats');
+                const stats = await response.json();
+                document.getElementById('serverStats').textContent = `
+                    Total Clients: ${stats.total_clients}
+                    ${Object.entries(stats.clients || {}).map(([id, s]) => `
+                    ${id}: ${s.frames_processed} frames
+                    `).join('')}
+                `;
+            } catch (err) {
+                console.log('Could not fetch stats');
+            }
+
+            if (isStreaming) {
+                setTimeout(pollServerStats, 2000);
+            }
+        }
+
+        function stopAll() {
+            isStreaming = false;
+            if (ws) ws.close();
+            if (stream) stream.getTracks().forEach(track => track.stop());
+            video.srcObject = null;
+
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('connectBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = true;
+            updateStatus('Stopped');
+        }
+    </script>
+</body>
+</html>
