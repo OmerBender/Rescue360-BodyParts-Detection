@@ -175,8 +175,4 @@ uvicorn.run(
 4. ⏳ Optimization עם TensorRT/ONNX (שלב 3)
 
 ---
-
-**צריך עזרה?** תשלח לי:
-- Screenshot של הלוגים
-- Server stats JSON
 - FPS setting שבחרת
